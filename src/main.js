@@ -1,8 +1,13 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { App } from "locar";
+import * as LocAR from "locar";
 
-// Coordenada objetivo para el laboratorio
+// Manejo seguro del export según la versión del bundle de LocAR
+const App = LocAR.App || LocAR.default?.App || LocAR.default;
+
+// ==========================================
+// 1. COORDENADA OBJETIVO (Donde aparecerá el Router)
+// ==========================================
 const TARGET = {
   lat: -2.299114,
   lon: -78.118125,
@@ -17,7 +22,7 @@ const statusText = document.getElementById("status");
 
 let app, locar;
 
-// Etiqueta flotante tipo Sprite
+// Función para crear la etiqueta flotante (Sprite 2D)
 function createInfoLabel() {
   const labelCanvas = document.createElement("canvas");
   labelCanvas.width = 1024;
@@ -59,11 +64,11 @@ function createInfoLabel() {
 
   const sprite = new THREE.Sprite(material);
   sprite.scale.set(14, 7, 1);
-  sprite.position.set(0, 8, 0);
+  sprite.position.set(0, 8, 0); // Altura sobre el router
   return sprite;
 }
 
-// Cubos de calibración cardinal
+// Función auxiliar para cubos de calibración cardinal
 function makeBox(color, size = 6) {
   const geom = new THREE.BoxGeometry(size, size, size);
   const mat = new THREE.MeshBasicMaterial({ color });
@@ -100,14 +105,14 @@ startBtn.addEventListener("click", async () => {
         firstPosition = false;
         statusText.innerText = "GPS recibido. Cargando modelos...";
 
-        // 1. Cubos de calibración cardinal (~30m alrededor)
+        // 1. Cubos de calibración cardinal (~30 metros alrededor)
         const d = 0.0003;
         locar.add(makeBox(0xff0000, 4), coords.longitude, coords.latitude + d, 2); // Norte (Rojo)
         locar.add(makeBox(0xffff00, 4), coords.longitude, coords.latitude - d, 2); // Sur (Amarillo)
         locar.add(makeBox(0x00ffff, 4), coords.longitude - d, coords.latitude, 2); // Oeste (Celeste)
         locar.add(makeBox(0x00ff00, 4), coords.longitude + d, coords.latitude, 2); // Este (Verde)
 
-        // 2. Cargar Router GLB + Etiqueta
+        // 2. Cargar el Router GLB + Etiqueta
         const loader = new GLTFLoader();
         loader.load(
           "/models/router.glb",
@@ -121,7 +126,9 @@ startBtn.addEventListener("click", async () => {
             routerGroup.add(router);
             routerGroup.add(label);
 
+            // Se coloca en la coordenada objetivo
             locar.add(routerGroup, TARGET.lon, TARGET.lat, 5);
+
             statusText.innerText = "Router agregado. Gira lentamente hacia la ubicación objetivo.";
           },
           undefined,
